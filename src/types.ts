@@ -1,12 +1,3 @@
-export type TransformMatrix = [number, number, number, number, number, number]
-
-export type DrawCall = (image: ImageBitmap, matrix: TransformMatrix) => void
-
-export interface DrawImageData {
-  bitmap: ImageBitmap
-  matrix: TransformMatrix
-}
-
 export interface Renderer {
   container: {
     style: unknown
@@ -62,7 +53,7 @@ export interface ViewStateFields {
   projectionData: ProjectionData
 }
 
-export interface ViewStateWithMethods extends ViewStateFields {
+interface ViewStateWithMethods extends ViewStateFields {
   projection: Projection
 }
 

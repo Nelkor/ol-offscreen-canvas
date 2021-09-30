@@ -1,14 +1,14 @@
 import '@/main.scss'
 
 import TileLayer from 'ol/layer/Tile'
-import { Stamen, Source } from 'ol/source'
-import { Layer } from 'ol/layer'
-import { Map as OlMap, View } from 'ol'
+import { Stamen } from 'ol/source'
+import { Map as OlMap, MapEvent, View } from 'ol'
 import { FrameState } from 'ol/PluggableMap'
+import ImageLayer from 'ol/layer/Image'
+import BaseEvent from 'ol/events/Event'
 
-import { enqueueRender, registerDrawCall } from './worker'
-import { getLayerRenderer } from './utils'
-import { createImageLayer, createImageSourceFactory } from './image-layer'
+import { getImageURL } from './worker'
+import { createImageSourceFactory, extendExtent } from './utils'
 
 const background = new TileLayer({
   className: 'background',
@@ -17,64 +17,33 @@ const background = new TileLayer({
   }),
 })
 
+const view = new View({
+  center: [41e5, 7506e3],
+  zoom: 11,
+})
+
 const map = new OlMap({
   target: 'map',
   layers: [background],
-  view: new View({
-    center: [41e5, 7506e3],
-    zoom: 11,
-  }),
+  view,
 })
 
 map.once('postrender', () => {
-  const customCanvas = (
-    getLayerRenderer(background).container.lastChild as HTMLElement
-  ).cloneNode() as HTMLCanvasElement
+  const createSource = createImageSourceFactory(view.getProjection())
+  const imageLayer = new ImageLayer()
 
-  const ctx = customCanvas.getContext('2d') as CanvasRenderingContext2D
-  const container = document.createElement('div')
+  const onMoveEnd = (event: BaseEvent) => {
+    // Искусственно увеличиваем extent,
+    // чтобы слой нарисовал немного за пределами экрана
+    const extent = extendExtent(view.calculateExtent())
 
-  container.className = 'custom-layer'
-  container.style.position = 'absolute'
-  container.style.width = '100%'
-  container.style.height = '100%'
-
-  registerDrawCall((image, matrix) => {
-    customCanvas.width = image.width
-    customCanvas.height = image.height
-
-    ctx.save()
-    ctx.transform(...matrix)
-    ctx.drawImage(image, 0, 0)
-    ctx.restore()
-  })
-
-  const customLayer = new Layer({
-    className: 'custom-layer',
-    render(frameState: FrameState) {
-      enqueueRender(frameState)
-
-      return container
-    },
-    source: new Source({}),
-  })
-
-  container.appendChild(customCanvas)
-
-  map.addLayer(customLayer)
-
-  // image layer
-  const createSource = createImageSourceFactory(map.getView().getProjection())
-
-  const imageLayer = createImageLayer(
-    createSource(map.getView().calculateExtent())
-  )
-
-  const drawImage = () => {
-    imageLayer.setSource(createSource(map.getView().calculateExtent()))
+    getImageURL((event as MapEvent).frameState as FrameState).then(url => {
+      imageLayer.setSource(createSource(url, extent))
+    })
   }
 
+  // Единоразовая прослушка rendercomplete – костыль. Но без него не работает
+  map.once('rendercomplete', onMoveEnd)
+  map.on('moveend', onMoveEnd)
   map.addLayer(imageLayer)
-
-  map.on('moveend', drawImage)
 })

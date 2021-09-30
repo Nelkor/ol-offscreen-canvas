@@ -9,14 +9,7 @@ import {
   createOffscreenCanvas,
   getLayerRenderer,
 } from '@/utils'
-import {
-  ClonedFrameStateMain,
-  ClonedFrameStateWorker,
-  TransformMatrix,
-} from '@/types'
-
-let nextFrame: ClonedFrameStateWorker | null = null
-let matrix = Array.from({ length: 6 }, () => 0) as TransformMatrix
+import { ClonedFrameStateMain } from '@/types'
 
 const style = new Style({
   stroke: new Stroke({
@@ -44,36 +37,15 @@ const renderer = getLayerRenderer(layer)
 renderer.container = { style: {} }
 renderer.context = ctx
 
-renderer.useContainer = (_: void, transform: string) => {
-  matrix = transform.slice(7, -1).split(', ').map(Number) as TransformMatrix
-}
-
-self.addEventListener('message', message => {
-  nextFrame = addMethodsToFrameState(message.data as ClonedFrameStateMain)
-})
-
-const draw = () => {
-  requestAnimationFrame(draw)
-
-  if (!nextFrame) {
-    return
-  }
+addEventListener('message', message => {
+  const nextFrame = addMethodsToFrameState(message.data as ClonedFrameStateMain)
 
   layer.render(
     nextFrame as unknown as FrameState,
     canvas as unknown as HTMLElement
   )
 
-  nextFrame = null
-
-  self.postMessage({ bitmap: canvas.transferToImageBitmap(), matrix })
-
-  // OffscreenCanvas to image URL
   canvas.convertToBlob().then(blob => {
-    const url = URL.createObjectURL(blob)
-
-    console.log(url)
+    postMessage(URL.createObjectURL(blob))
   })
-}
-
-requestAnimationFrame(draw)
+})
