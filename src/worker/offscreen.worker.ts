@@ -67,6 +67,13 @@ const draw = () => {
   nextFrame = null
 
   self.postMessage({ bitmap: canvas.transferToImageBitmap(), matrix })
+
+  // OffscreenCanvas to image URL
+  canvas.convertToBlob().then(blob => {
+    const url = URL.createObjectURL(blob)
+
+    console.log(url)
+  })
 }
 
 requestAnimationFrame(draw)

@@ -8,6 +8,7 @@ import { FrameState } from 'ol/PluggableMap'
 
 import { enqueueRender, registerDrawCall } from './worker'
 import { getLayerRenderer } from './utils'
+import { createImageLayer, createImageSourceFactory } from './image-layer'
 
 const background = new TileLayer({
   className: 'background',
@@ -61,4 +62,19 @@ map.once('postrender', () => {
   container.appendChild(customCanvas)
 
   map.addLayer(customLayer)
+
+  // image layer
+  const createSource = createImageSourceFactory(map.getView().getProjection())
+
+  const imageLayer = createImageLayer(
+    createSource(map.getView().calculateExtent())
+  )
+
+  const drawImage = () => {
+    imageLayer.setSource(createSource(map.getView().calculateExtent()))
+  }
+
+  map.addLayer(imageLayer)
+
+  map.on('moveend', drawImage)
 })
