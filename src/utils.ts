@@ -40,7 +40,11 @@ export const createImageSourceFactory =
   (url: string, imageExtent?: number[]): Static =>
     new Static({ projection, url, imageExtent })
 
-export const extendExtent = (extent: number[]): number[] => {
+const extendExtent = (extent: number[] | null): number[] | null => {
+  if (!extent) {
+    return null
+  }
+
   const [x1, y1, x2, y2] = extent
   const hdx = (x2 - x1) * EXPANSION_FACTOR
   const hdy = (y2 - y1) * EXPANSION_FACTOR
@@ -124,12 +128,12 @@ export const cloneFrameState = (
 
   return {
     viewHints,
-    extent,
     pixelRatio,
     layerIndex,
-    // Искусственно увеличиваем размеры frameState,
-    // чтобы слой нарисовал немного за пределами экрана
+    // Искусственно увеличиваем размеры и extent,
+    // чтобы слой был нарисован немного за пределами экрана
     size: extendSize(size),
+    extent: extendExtent(extent),
     layerStatesArray: copyLayerStatesArray(layerStatesArray, layerIndex),
     viewState: copyViewState(viewState),
   }

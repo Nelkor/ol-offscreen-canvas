@@ -40,12 +40,20 @@ renderer.context = ctx
 addEventListener('message', message => {
   const nextFrame = addMethodsToFrameState(message.data as ClonedFrameStateMain)
 
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+
   layer.render(
     nextFrame as unknown as FrameState,
     canvas as unknown as HTMLElement
   )
 
   canvas.convertToBlob().then(blob => {
-    postMessage(URL.createObjectURL(blob))
+    const { extent } = nextFrame
+
+    // TODO get rid of object URL later
+    postMessage({
+      url: URL.createObjectURL(blob),
+      extent,
+    })
   })
 })

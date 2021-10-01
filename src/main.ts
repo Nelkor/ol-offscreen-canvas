@@ -7,8 +7,8 @@ import { FrameState } from 'ol/PluggableMap'
 import ImageLayer from 'ol/layer/Image'
 import BaseEvent from 'ol/events/Event'
 
-import { getImageURL } from './worker'
-import { createImageSourceFactory, extendExtent } from './utils'
+import { enqueueRender, watchUrl } from './worker'
+import { createImageSourceFactory } from './utils'
 
 const background = new TileLayer({
   className: 'background',
@@ -32,14 +32,12 @@ map.once('postrender', () => {
   const createSource = createImageSourceFactory(view.getProjection())
   const imageLayer = new ImageLayer()
 
-  const onMoveEnd = (event: BaseEvent) => {
-    // Искусственно увеличиваем extent,
-    // чтобы слой нарисовал немного за пределами экрана
-    const extent = extendExtent(view.calculateExtent())
+  watchUrl((url, extent) => {
+    imageLayer.setSource(createSource(url, extent))
+  })
 
-    getImageURL((event as MapEvent).frameState as FrameState).then(url => {
-      imageLayer.setSource(createSource(url, extent))
-    })
+  const onMoveEnd = (event: BaseEvent) => {
+    enqueueRender((event as MapEvent).frameState as FrameState)
   }
 
   // Единоразовая прослушка rendercomplete – костыль. Но без него не работает
