@@ -50,7 +50,6 @@ addEventListener('message', message => {
   canvas.convertToBlob().then(blob => {
     const { extent } = nextFrame
 
-    // TODO get rid of object URL later
     postMessage({
       url: URL.createObjectURL(blob),
       extent,

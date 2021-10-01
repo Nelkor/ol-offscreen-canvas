@@ -7,9 +7,9 @@ export interface Renderer {
   useContainer: (_: void, transform: string) => void
 }
 
-export type UrlWatcher = (url: string, extent: number[]) => void
+export type ImageWatcher = (url: string, extent: number[]) => void
 
-export interface WorkerData {
+export interface WorkerImage {
   url: string
   extent: number[]
 }

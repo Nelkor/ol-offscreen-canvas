@@ -5,17 +5,18 @@ import { FrameState } from 'ol/PluggableMap'
 import ImageLayer from 'ol/layer/Image'
 import BaseEvent from 'ol/events/Event'
 
-import { enqueueRender, watchUrl } from './worker'
+import { enqueueRender, watchImages } from './worker'
 import { createImageSourceFactory } from './utils'
 import { map } from './map'
 
 let isMapMoving = false
+let lastUrl = ''
 
 map.once('postrender', () => {
   const createSource = createImageSourceFactory(map.getView().getProjection())
   const imageLayer = new ImageLayer()
 
-  watchUrl((url, extent) => {
+  watchImages((url, extent) => {
     // По неизвестной причине замена source происходит в два этапа:
     // 1. Выполнение функции setSource
     // 2. Некий второй этап
@@ -44,6 +45,11 @@ map.once('postrender', () => {
     // Пока что не удалось этому миганию воспрепятствовать.
     // Случается оно довольно редко
     imageLayer.setSource(createSource(url, extent))
+
+    // Удаляем предыдущее изображение по его url
+    URL.revokeObjectURL(lastUrl)
+
+    lastUrl = url
   })
 
   const onMoveEnd = (event: BaseEvent) => {
@@ -56,7 +62,7 @@ map.once('postrender', () => {
     isMapMoving = true
   })
 
-  // Единоразовая прослушка rendercomplete – костыль. Но без него не работает
+  // Единоразовая прослушка rendercomplete — костыль. Но без него не работает
   map.once('rendercomplete', onMoveEnd)
   map.on('moveend', onMoveEnd)
   map.addLayer(imageLayer)
