@@ -37,8 +37,8 @@ const renderer = getLayerRenderer(layer)
 renderer.container = { style: {} }
 renderer.context = ctx
 
-addEventListener('message', message => {
-  const nextFrame = addMethodsToFrameState(message.data as ClonedFrameStateMain)
+addEventListener('message', ({ data }: MessageEvent<ClonedFrameStateMain>) => {
+  const nextFrame = addMethodsToFrameState(data)
 
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
@@ -48,11 +48,9 @@ addEventListener('message', message => {
   )
 
   canvas.convertToBlob().then(blob => {
-    const { extent } = nextFrame
-
     postMessage({
       url: URL.createObjectURL(blob),
-      extent,
+      extent: nextFrame.extent,
     })
   })
 })
